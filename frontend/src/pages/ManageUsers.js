@@ -12,7 +12,7 @@ function ManageUsers() {
           "http://localhost:5000/api/admin/users",
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Assuming token is stored in localStorage
+              Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Assumingg token is stored in localStorage
             },
           }
         );
