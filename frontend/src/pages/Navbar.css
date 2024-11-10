@@ -1,0 +1,56 @@
+/* src/components/Navbar.css */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #333;
+  color: white;
+}
+
+.navbar-logo a {
+  color: white;
+  text-decoration: none;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.navbar-links {
+  list-style-type: none;
+  display: flex;
+  gap: 20px;
+}
+
+.navbar-links li a {
+  color: white;
+  text-decoration: none;
+}
+
+.navbar-links li a:hover {
+  color: #ddd;
+}
+
+.navbar-search {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-search input {
+  padding: 5px;
+  border: none;
+  border-radius: 3px;
+  margin-right: 5px;
+}
+
+.navbar-search button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 3px;
+  background-color: #555;
+  color: white;
+  cursor: pointer;
+}
+
+.navbar-search button:hover {
+  background-color: #777;
+}

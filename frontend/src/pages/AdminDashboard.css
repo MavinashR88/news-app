@@ -1,0 +1,19 @@
+/* src/pages/AdminDashboard.css */
+.admin-dashboard {
+  padding: 20px;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.admin-nav a {
+  text-decoration: none;
+  color: #007bff;
+}
+
+.admin-nav a:hover {
+  text-decoration: underline;
+}

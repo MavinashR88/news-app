@@ -1,0 +1,162 @@
+/* NewsPop.css */
+
+.news-pop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.news-pop-container {
+  background: #fff;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+.news-pop-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+}
+
+.news-pop-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.news-pop-image {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.news-pop-content {
+  font-size: 16px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.news-pop-meta {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 15px;
+}
+
+.news-pop-tags {
+  margin-bottom: 15px;
+}
+
+.news-pop-tag {
+  display: inline-block;
+  background: #007bff;
+  color: white;
+  padding: 5px 10px;
+  margin: 3px;
+  border-radius: 15px;
+  font-size: 12px;
+}
+
+.news-pop-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.news-pop-action-button {
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.news-pop-like-button {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.news-pop-dislike-button {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.news-pop-like-button:hover {
+  background-color: #218838;
+}
+
+.news-pop-dislike-button:hover {
+  background-color: #c82333;
+}
+
+.news-pop-comments {
+  margin-top: 20px;
+}
+
+.news-pop-comments h4 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.news-pop-comment {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+  color: #555;
+}
+
+.news-pop-comment strong {
+  color: #333;
+}
+
+.news-pop-comment-input {
+  display: flex;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.news-pop-comment-input input[type="text"] {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.news-pop-comment-input button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.news-pop-comment-input button:hover {
+  background-color: #0056b3;
+}
+
+.news-pop-comment p {
+  font-size: 14px;
+  color: #888;
+}

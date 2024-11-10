@@ -1,0 +1,81 @@
+/* General styling for the signup page */
+.signup-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4a90e2, #8e44ad);
+  color: #333;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Container styling */
+.signup-container {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.signup-container h2 {
+  font-size: 28px;
+  font-weight: bold;
+  color: #4a90e2;
+  margin-bottom: 20px;
+}
+
+/* Input fields styling */
+.signup-container label {
+  display: block;
+  text-align: left;
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.signup-container input {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+.signup-container input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0px 0px 8px rgba(74, 144, 226, 0.3);
+}
+
+/* Button styling */
+.signup-container button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 6px;
+  background-color: #4a90e2;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.signup-container button:hover {
+  background-color: #8e44ad;
+}
+
+/* Error and success messages */
+.signup-container p.error {
+  color: red;
+}
+
+.signup-container p.success {
+  color: green;
+}
