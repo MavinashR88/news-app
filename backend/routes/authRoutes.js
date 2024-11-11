@@ -20,6 +20,31 @@ router.post("/signup", async (req, res) => {
 
 // Login route
 
+// router.post("/login", async (req, res) => {
+//   const { email, password } = req.body;
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user || !(await bcrypt.compare(password, user.password))) {
+//       return res.status(401).json({ error: "Invalid credentials" });
+//     }
+
+//     const token = jwt.sign(
+//       { userId: user._id, role: user.role },
+//       process.env.JWT_SECRET,
+//       {
+//         expiresIn: "1h",
+//       }
+//     );
+
+//     console.log("User role:", user.role); // Debugging line to confirm the role
+
+//     // Send the role along with the token
+//     res.json({ message: "Login successful", token, role: user.role });
+//   } catch (error) {
+//     res.status(500).json({ error: "Login failed" });
+//   }
+// });
+
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -30,15 +55,10 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
+      process.env.JWT_SECRET, // Ensure this matches exactly
+      { expiresIn: "1h" }
     );
 
-    console.log("User role:", user.role); // Debugging line to confirm the role
-
-    // Send the role along with the token
     res.json({ message: "Login successful", token, role: user.role });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });

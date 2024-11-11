@@ -23,6 +23,8 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  readingHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
+  savedArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
 });
 
 module.exports = mongoose.model("User", UserSchema);

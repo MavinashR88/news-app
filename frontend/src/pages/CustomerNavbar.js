@@ -1,8 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./CustomerNavbar.css";
 
 const CustomerNavbar = ({ onCategoryChange, onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+
   const categories = [
     "All",
     "Business",
@@ -13,8 +16,13 @@ const CustomerNavbar = ({ onCategoryChange, onSearch }) => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    onSearch(searchTerm);
-    setSearchTerm(""); // Clear search input after submitting
+    if (onSearch) {
+      onSearch(searchTerm); // Ensure onSearch is defined before calling it
+    }
+  };
+
+  const handleProfileClick = () => {
+    navigate("/profile"); // Directly navigate to the profile page
   };
 
   return (
@@ -40,7 +48,7 @@ const CustomerNavbar = ({ onCategoryChange, onSearch }) => {
       </form>
 
       <div className="navbar-profile">
-        <a href="/profile">Profile</a>
+        <button onClick={handleProfileClick}>Profile</button>
       </div>
     </nav>
   );

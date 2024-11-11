@@ -1,22 +1,21 @@
-// // backend/middlewares/authMiddleware.js
 // const jwt = require("jsonwebtoken");
 
 // const verifyToken = (req, res, next) => {
-//   const token = req.header("Authorization");
-//   if (!token) return res.status(401).json({ message: "Access Denied" });
+//   const authHeader = req.headers["authorization"];
+//   const token = authHeader && authHeader.split(" ")[1];
+//   console.log("Token received:", token);
 
-//   try {
-//     const verified = jwt.verify(token, process.env.JWT_SECRET);
-//     req.user = verified;
+//   if (!token) return res.status(403).json({ message: "Access Denied" });
+
+//   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+//     if (err) return res.status(403).json({ message: "Invalid Token" });
+//     req.user = user;
 //     next();
-//   } catch (error) {
-//     res.status(400).json({ message: "Invalid Token" });
-//   }
+//   });
 // };
 
-// module.exports = { verifyToken };
-// middlewares/authMiddleware.js
-// middlewares/authMiddleware.js
+// module.exports = verifyToken;
+// backend/middlewares/authMiddleware.js
 const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
@@ -27,7 +26,7 @@ const verifyToken = (req, res, next) => {
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: "Invalid Token" });
-    req.user = user;
+    req.user = user; // Set the user info from token in the request
     next();
   });
 };
