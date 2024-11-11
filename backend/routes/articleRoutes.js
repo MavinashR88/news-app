@@ -4,14 +4,26 @@ const router = express.Router();
 const fetchAndSaveNews = require("../utils/fetchNews");
 const Article = require("../models/Article");
 const User = require("../models/User");
+module.exports = router;
 
-// Fetch news and save to database
+// Fetch and save news route (if used, make sure fetchAndSaveNews is defined)
 router.get("/fetch-news", async (req, res) => {
   try {
     await fetchAndSaveNews();
     res.json({ message: "News fetched and saved successfully." });
   } catch (error) {
     res.status(500).json({ message: "Error fetching news" });
+  }
+});
+
+// Get all articles route
+router.get("/", async (req, res) => {
+  try {
+    const articles = await Article.find(); // Fetch all articles
+    res.json(articles); // Send articles as JSON response
+  } catch (error) {
+    console.error("Error fetching articles:", error);
+    res.status(500).json({ message: "Failed to fetch articles" });
   }
 });
 
@@ -99,13 +111,14 @@ router.post("/:id/comment", async (req, res) => {
   }
 });
 // Get all articles
-router.get("/articles", async (req, res) => {
-  try {
-    const articles = await Article.find();
-    res.json(articles);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching articles" });
-  }
-});
+// router.get("/articles", async (req, res) => {
+//   try {
+//     const articles = await Article.find(); // Fetch all articles
+//     res.json(articles); // Send articles as JSON response
+//   } catch (error) {
+//     console.error("Error fetching articles:", error);
+//     res.status(500).json({ message: "Failed to fetch articles" });
+//   }
+// });
 
 module.exports = router;

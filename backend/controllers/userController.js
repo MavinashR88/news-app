@@ -59,3 +59,32 @@ exports.getSavedArticles = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.updateSubscription = async (req, res) => {
+  try {
+    const userId = req.userId; // This is set in authMiddleware
+    const { subscription } = req.body;
+
+    // Find user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update the subscription and save
+    user.subscription = subscription;
+    await user.save();
+
+    res
+      .status(200)
+      .json({
+        message: "Subscription updated successfully",
+        subscription: user.subscription,
+      });
+  } catch (error) {
+    console.error("Error updating subscription:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to update subscription. Try again." });
+  }
+};
