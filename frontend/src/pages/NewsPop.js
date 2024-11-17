@@ -1,60 +1,93 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./NewsPop.css";
 
 const NewsPop = ({ article, onClose, userId }) => {
-  const [likes, setLikes] = useState(article.likes);
-  const [dislikes, setDislikes] = useState(article.dislikes);
-  const [comments, setComments] = useState(article.comments);
+  const [likes, setLikes] = useState(article.likes || 0);
+  const [dislikes, setDislikes] = useState(article.dislikes || 0);
+  const [comments, setComments] = useState(article.comments || []);
   const [commentContent, setCommentContent] = useState("");
+  const [hasLiked, setHasLiked] = useState(false);
+  const [hasDisliked, setHasDisliked] = useState(false);
+
+  const token = localStorage.getItem("authToken");
+
+  useEffect(() => {
+    // Initialize like/dislike state for the current user
+    setHasLiked(article.likedBy.includes(userId));
+    setHasDisliked(article.dislikedBy.includes(userId));
+  }, [article, userId]);
 
   const handleLike = async () => {
+    if (hasLiked) return;
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/${article._id}/like`,
-        { userId }
+        `http://localhost:5000/api/articles/${article._id}/like`,
+        { userId },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setLikes(res.data.likes);
-      setDislikes(res.data.dislikes); // Update dislikes in case a dislike was removed
+      setDislikes(res.data.dislikes);
+      setHasLiked(true);
+      setHasDisliked(false);
     } catch (error) {
       console.error(
         "Error liking article:",
-        error.response?.data?.message || error.message
+        error.response?.data || error.message
       );
     }
   };
 
   const handleDislike = async () => {
+    if (hasDisliked) return;
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/${article._id}/dislike`,
-        { userId }
+        `http://localhost:5000/api/articles/${article._id}/dislike`,
+        { userId },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setLikes(res.data.likes); // Update likes in case a like was removed
+      setLikes(res.data.likes);
       setDislikes(res.data.dislikes);
+      setHasLiked(false);
+      setHasDisliked(true);
     } catch (error) {
       console.error(
         "Error disliking article:",
-        error.response?.data?.message || error.message
+        error.response?.data || error.message
       );
     }
   };
 
   const handleCommentSubmit = async () => {
+    if (!commentContent.trim()) return;
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/${article._id}/comment`,
-        {
-          userId,
-          content: commentContent,
-        }
+        `http://localhost:5000/api/articles/${article._id}/comment`,
+        { userId, content: commentContent },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setComments(res.data); // Update comments with the latest comments array
-      setCommentContent(""); // Clear the comment input
+      setComments(res.data); // Update comments with new list
+      setCommentContent(""); // Clear input
     } catch (error) {
       console.error(
         "Error submitting comment:",
-        error.response?.data?.message || error.message
+        error.response?.data || error.message
+      );
+    }
+  };
+
+  const handleSaveArticle = async () => {
+    try {
+      await axios.post(
+        `http://localhost:5000/api/user/save-article`,
+        { userId, articleId: article._id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("Article saved successfully!");
+    } catch (error) {
+      console.error(
+        "Error saving article:",
+        error.response?.data || error.message
       );
     }
   };
@@ -72,56 +105,35 @@ const NewsPop = ({ article, onClose, userId }) => {
           className="news-pop-image"
         />
         <p className="news-pop-content">{article.content}</p>
-        <p className="news-pop-meta">
-          <strong>Source:</strong> {article.source}
-          <br />
-          <strong>Published at:</strong>{" "}
-          {new Date(article.publishedAt).toLocaleString()}
-        </p>
-
-        <div className="news-pop-tags">
-          {article.tags.map((tag, index) => (
-            <span key={index} className="news-pop-tag">
-              {tag}
-            </span>
-          ))}
-        </div>
 
         <div className="news-pop-actions">
-          <button
-            className="news-pop-action-button news-pop-like-button"
-            onClick={handleLike}
-          >
-            Like ({likes})
+          <button onClick={handleLike} disabled={hasLiked}>
+            {hasLiked ? "Liked" : "Like"} ({likes})
           </button>
-          <button
-            className="news-pop-action-button news-pop-dislike-button"
-            onClick={handleDislike}
-          >
-            Dislike ({dislikes})
+          <button onClick={handleDislike} disabled={hasDisliked}>
+            {hasDisliked ? "Disliked" : "Dislike"} ({dislikes})
           </button>
+          <button onClick={handleSaveArticle}>Save Article</button>
         </div>
 
         <div className="news-pop-comments">
           <h4>Comments</h4>
           {comments.length > 0 ? (
             comments.map((comment) => (
-              <div key={comment._id} className="news-pop-comment">
-                <strong>{comment.userName}</strong>: {comment.content}
+              <div key={comment._id} className="comment">
+                <strong>{comment.userName}:</strong> {comment.content}
               </div>
             ))
           ) : (
-            <p>No comments yet.</p>
+            <p>No comments yet. Be the first to comment!</p>
           )}
-          <div className="news-pop-comment-input">
-            <input
-              type="text"
-              value={commentContent}
-              onChange={(e) => setCommentContent(e.target.value)}
-              placeholder="Add a comment..."
-            />
-            <button onClick={handleCommentSubmit}>Submit</button>
-          </div>
+          <input
+            type="text"
+            value={commentContent}
+            onChange={(e) => setCommentContent(e.target.value)}
+            placeholder="Add a comment..."
+          />
+          <button onClick={handleCommentSubmit}>Submit</button>
         </div>
       </div>
     </div>

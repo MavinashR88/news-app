@@ -1,6 +1,6 @@
-// backend/controllers/userController.js
 const User = require("../models/User");
 
+// Get user profile
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId); // Access user ID from verified token
@@ -36,7 +36,37 @@ exports.updateUserProfile = async (req, res) => {
   }
 };
 
-// Get reading history
+// Save an article to user's saved articles
+exports.saveArticle = async (req, res) => {
+  const { articleId } = req.body;
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user.savedArticles.includes(articleId)) {
+      user.savedArticles.push(articleId);
+      await user.save();
+    }
+    res.json(user.savedArticles);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Mark article as read
+exports.markAsRead = async (req, res) => {
+  const { articleId } = req.body;
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user.readingHistory.includes(articleId)) {
+      user.readingHistory.push(articleId);
+      await user.save();
+    }
+    res.json(user.readingHistory);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get reading history for the user
 exports.getReadingHistory = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).populate(
@@ -44,43 +74,36 @@ exports.getReadingHistory = async (req, res) => {
     );
     res.json(user.readingHistory);
   } catch (error) {
-    console.error("Error fetching reading history:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Get saved articles
+// Get saved articles for the user
 exports.getSavedArticles = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).populate("savedArticles");
     res.json(user.savedArticles);
   } catch (error) {
-    console.error("Error fetching saved articles:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Update subscription
 exports.updateSubscription = async (req, res) => {
   try {
-    const userId = req.userId; // This is set in authMiddleware
     const { subscription } = req.body;
-
-    // Find user by ID
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update the subscription and save
     user.subscription = subscription;
     await user.save();
 
-    res
-      .status(200)
-      .json({
-        message: "Subscription updated successfully",
-        subscription: user.subscription,
-      });
+    res.status(200).json({
+      message: "Subscription updated successfully",
+      subscription: user.subscription,
+    });
   } catch (error) {
     console.error("Error updating subscription:", error);
     res

@@ -1,18 +1,46 @@
-// backend/routes/articleRoutes.js
 const express = require("express");
+const axios = require("axios"); // Import axios to make HTTP requests
 const router = express.Router();
-const fetchAndSaveNews = require("../utils/fetchNews");
 const Article = require("../models/Article");
 const User = require("../models/User");
-module.exports = router;
 
-// Fetch and save news route (if used, make sure fetchAndSaveNews is defined)
+const API_URL = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${process.env.NEWS_API_KEY}`;
+
+// Fetch and save news route
 router.get("/fetch-news", async (req, res) => {
   try {
-    await fetchAndSaveNews();
-    res.json({ message: "News fetched and saved successfully." });
+    console.log("Fetching news from API...");
+    const response = await axios.get(API_URL);
+    const articles = response.data.articles;
+
+    console.log("Fetched Articles:", articles); // Log fetched articles
+
+    // Ensure articles exist before saving
+    if (articles && articles.length > 0) {
+      for (const article of articles) {
+        const newsArticle = new Article({
+          title: article.title,
+          description: article.description,
+          source: article.source.name,
+          url: article.url,
+          urlToImage: article.urlToImage,
+          date: new Date(article.publishedAt || Date.now()),
+          viewCount: 0,
+        });
+
+        // Log article before saving
+        console.log("Saving article:", newsArticle);
+        await newsArticle.save();
+      }
+
+      res.status(201).json({ message: "News fetched and saved to database!" });
+    } else {
+      console.log("No articles found from API.");
+      res.status(404).json({ error: "No articles found from the API." });
+    }
   } catch (error) {
-    res.status(500).json({ message: "Error fetching news" });
+    console.error("Error fetching news:", error);
+    res.status(500).json({ error: "Error fetching news." });
   }
 });
 
@@ -35,14 +63,12 @@ router.post("/:id/like", async (req, res) => {
     const article = await Article.findById(req.params.id);
     if (!article) return res.status(404).json({ message: "Article not found" });
 
-    // Check if the user has already liked the article
     if (article.likedBy.includes(userId)) {
       return res
         .status(400)
         .json({ message: "User has already liked this article" });
     }
 
-    // If the user previously disliked the article, remove their dislike
     article.dislikedBy = article.dislikedBy.filter(
       (id) => id.toString() !== userId
     );
@@ -64,14 +90,12 @@ router.post("/:id/dislike", async (req, res) => {
     const article = await Article.findById(req.params.id);
     if (!article) return res.status(404).json({ message: "Article not found" });
 
-    // Check if the user has already disliked the article
     if (article.dislikedBy.includes(userId)) {
       return res
         .status(400)
         .json({ message: "User has already disliked this article" });
     }
 
-    // If the user previously liked the article, remove their like
     article.likedBy = article.likedBy.filter((id) => id.toString() !== userId);
     article.dislikes += 1;
     article.dislikedBy.push(userId);
@@ -84,7 +108,6 @@ router.post("/:id/dislike", async (req, res) => {
 });
 
 // Comment on an article
-
 router.post("/:id/comment", async (req, res) => {
   const { userId, content } = req.body;
 
@@ -97,7 +120,7 @@ router.post("/:id/comment", async (req, res) => {
 
     const comment = {
       userId,
-      userName: user.name, // Assuming `user.name` exists in your User model
+      userName: user.name,
       content,
       createdAt: new Date(),
     };
@@ -105,20 +128,10 @@ router.post("/:id/comment", async (req, res) => {
     article.comments.push(comment);
     await article.save();
 
-    res.json(article.comments); // Send updated comments back to frontend
+    res.json(article.comments);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-// Get all articles
-// router.get("/articles", async (req, res) => {
-//   try {
-//     const articles = await Article.find(); // Fetch all articles
-//     res.json(articles); // Send articles as JSON response
-//   } catch (error) {
-//     console.error("Error fetching articles:", error);
-//     res.status(500).json({ message: "Failed to fetch articles" });
-//   }
-// });
 
 module.exports = router;

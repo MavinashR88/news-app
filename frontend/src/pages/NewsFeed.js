@@ -6,80 +6,179 @@ import "./NewsFeed.css";
 
 const NewsFeed = () => {
   const [articles, setArticles] = useState([]);
-  const [filteredArticles, setFilteredArticles] = useState([]);
+  const [topArticles, setTopArticles] = useState([]);
+  const [popularArticles, setPopularArticles] = useState([]);
+  const [latestArticles, setLatestArticles] = useState([]);
+  const [sourceFilteredArticles, setSourceFilteredArticles] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedSource, setSelectedSource] = useState("");
   const [isGridView, setIsGridView] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const userId = localStorage.getItem("userId"); // Retrieve user ID from localStorage
+
+  const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
 
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/articles");
+        const res = await axios.get("http://localhost:5000/api/articles", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setArticles(res.data);
-        setFilteredArticles(res.data); // Initially, all articles are displayed
+
+        // Filter sections
+        setTopArticles(res.data.slice(0, 5)); // Assuming top articles are the first 5 for simplicity
+        setPopularArticles(
+          res.data.sort((a, b) => b.likes - a.likes).slice(0, 5)
+        ); // Most liked articles as popular
+        setLatestArticles(
+          res.data.sort(
+            (a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)
+          )
+        ); // Latest articles based on published date
       } catch (error) {
         console.error("Error fetching articles:", error);
       }
     };
 
     fetchArticles();
-  }, []);
+  }, [token]);
 
-  // Function to open NewsPop with selected article
   const handleArticleClick = (article) => {
+    markAsRead(article._id);
     setSelectedArticle(article);
   };
 
-  // Function to handle category selection
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
-    setIsGridView(category !== "All"); // Grid view for specific categories, reset for "All"
+    setIsGridView(category !== "All");
     if (category === "All") {
-      setFilteredArticles(articles); // Reset to all articles
+      setSourceFilteredArticles(articles);
     } else {
-      filterArticles(category, "");
+      const filtered = articles.filter(
+        (article) => article.category === category
+      );
+      setSourceFilteredArticles(filtered);
     }
   };
 
-  // Function to handle search input
-  const handleSearch = (term) => {
-    setIsGridView(true); // Display search results in grid view
-    filterArticles(selectedCategory, term);
+  const handleSourceChange = (source) => {
+    setSelectedSource(source);
+    const filteredBySource = articles.filter(
+      (article) => article.source === source
+    );
+    setSourceFilteredArticles(filteredBySource);
   };
 
-  // Function to filter articles based on category and search term
-  const filterArticles = (category, term) => {
-    const filtered = articles.filter((article) => {
-      const matchesCategory =
-        category === "All" || article.category === category;
-      const matchesSearch = article.title
-        .toLowerCase()
-        .includes(term.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-    setFilteredArticles(filtered);
+  const saveArticle = async (articleId) => {
+    try {
+      await axios.post(
+        "http://localhost:5000/api/user/save-article",
+        { userId, articleId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Article saved successfully!");
+    } catch (error) {
+      console.error("Error saving article:", error);
+    }
+  };
+
+  const markAsRead = async (articleId) => {
+    try {
+      await axios.post(
+        "http://localhost:5000/api/user/mark-as-read",
+        { userId, articleId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Article marked as read!");
+    } catch (error) {
+      console.error("Error marking article as read:", error);
+    }
   };
 
   return (
     <div className="newsfeed-container">
-      {/* Customer Navbar with category and search functionality */}
       <CustomerNavbar
         onCategoryChange={handleCategoryChange}
-        onSearch={(term) => {
-          handleSearch(term);
-        }}
+        onSourceChange={handleSourceChange}
       />
 
-      {isGridView ? (
-        // Simple Grid Layout for filtered articles
-        <section className="grid-layout">
-          <h2>
-            {selectedCategory === "All"
-              ? "News Feed"
-              : `${selectedCategory} Articles`}
-          </h2>
+      {/* Top News Section */}
+      <section className="top-news-section">
+        <h2>Top News</h2>
+        <div className="top-news-scroll">
+          {topArticles.map((article) => (
+            <div
+              key={article._id}
+              className="top-news-card"
+              onClick={() => handleArticleClick(article)}
+            >
+              <img src={article.urlToImage} alt={article.title} />
+              <h3>{article.title}</h3>
+              <p>{article.content.slice(0, 80)}...</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Popular Articles Section */}
+      <section className="popular-articles-section">
+        <h2>Popular Articles</h2>
+        <div className="grid-container">
+          {popularArticles.map((article) => (
+            <div
+              key={article._id}
+              className="grid-card"
+              onClick={() => handleArticleClick(article)}
+            >
+              <img src={article.urlToImage} alt={article.title} />
+              <h3>{article.title}</h3>
+              <p>{article.content.slice(0, 100)}...</p>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  saveArticle(article._id);
+                }}
+              >
+                Save
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Latest News Section */}
+      <section className="latest-news-section">
+        <h2>Latest News</h2>
+        <div className="grid-container">
+          {latestArticles.slice(0, 5).map((article) => (
+            <div
+              key={article._id}
+              className="grid-card"
+              onClick={() => handleArticleClick(article)}
+            >
+              <img src={article.urlToImage} alt={article.title} />
+              <h3>{article.title}</h3>
+              <p>{article.content.slice(0, 100)}...</p>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  saveArticle(article._id);
+                }}
+              >
+                Save
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Filtered by Source Section */}
+      {selectedSource && (
+        <section className="source-filtered-section">
+          <h2>{selectedSource} News</h2>
           <div className="grid-container">
-            {filteredArticles.map((article) => (
+            {sourceFilteredArticles.map((article) => (
               <div
                 key={article._id}
                 className="grid-card"
@@ -88,54 +187,26 @@ const NewsFeed = () => {
                 <img src={article.urlToImage} alt={article.title} />
                 <h3>{article.title}</h3>
                 <p>{article.content.slice(0, 100)}...</p>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    saveArticle(article._id);
+                  }}
+                >
+                  Save
+                </button>
               </div>
             ))}
           </div>
         </section>
-      ) : (
-        // Original News Feed Layout for "All" selection
-        <>
-          <section className="top-news-section">
-            <h2>Top News</h2>
-            <div className="top-news-scroll">
-              {filteredArticles.slice(0, 5).map((article) => (
-                <div
-                  key={article._id}
-                  className="top-news-card"
-                  onClick={() => handleArticleClick(article)}
-                >
-                  <img src={article.urlToImage} alt={article.title} />
-                  <h3>{article.title}</h3>
-                  <p>{article.content.slice(0, 80)}...</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="latest-news-section">
-            <h2>Latest News</h2>
-            <div className="latest-news-scroll">
-              {filteredArticles.slice(0, 10).map((article) => (
-                <div
-                  key={article._id}
-                  className="latest-news-card"
-                  onClick={() => handleArticleClick(article)}
-                >
-                  <img src={article.urlToImage} alt={article.title} />
-                  <h3>{article.title}</h3>
-                  <p>{article.content.slice(0, 100)}...</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        </>
       )}
 
-      {/* Display the NewsPop modal */}
+      {/* Article Popup */}
       {selectedArticle && (
         <NewsPop
           article={selectedArticle}
           onClose={() => setSelectedArticle(null)}
+          userId={userId}
         />
       )}
     </div>

@@ -6,10 +6,7 @@ const Profile = () => {
   const [userData, setUserData] = useState({});
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "" });
   const [readingHistory, setReadingHistory] = useState([]);
   const [savedArticles, setSavedArticles] = useState([]);
   const [subscriptionDetails, setSubscriptionDetails] = useState("");
@@ -17,13 +14,12 @@ const Profile = () => {
   const [showSavedArticles, setShowSavedArticles] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("");
-  const [showCardForm, setShowCardForm] = useState(false); // New state for card form
+  const [showCardForm, setShowCardForm] = useState(false);
   const [cardDetails, setCardDetails] = useState({
     cardNumber: "",
     expiryDate: "",
     cvv: "",
   });
-
   const token = localStorage.getItem("authToken");
 
   useEffect(() => {
@@ -44,7 +40,35 @@ const Profile = () => {
         setLoading(false);
       }
     };
+    const fetchReadingHistory = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/user/reading-history",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setReadingHistory(response.data);
+      } catch (error) {
+        console.error("Error fetching reading history:", error);
+      }
+    };
+    const fetchSavedArticles = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/user/saved-articles",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setSavedArticles(response.data);
+      } catch (error) {
+        console.error("Error fetching saved articles:", error);
+      }
+    };
     fetchProfile();
+    fetchReadingHistory();
+    fetchSavedArticles();
   }, [token]);
 
   const handleEdit = () => setIsEditing(true);
@@ -70,12 +94,10 @@ const Profile = () => {
   };
 
   const handleUpgradeClick = () => setShowUpgradeModal(true);
-
   const handlePlanSelection = (plan) => {
     setSelectedPlan(plan);
-    setShowCardForm(plan !== "Free"); // Only show card form if plan is paid
+    setShowCardForm(plan !== "Free"); // Show card form only for paid plans
   };
-
   const handleCardInputChange = (e) => {
     const { name, value } = e.target;
     setCardDetails({ ...cardDetails, [name]: value });
@@ -87,25 +109,18 @@ const Profile = () => {
       setShowUpgradeModal(false);
       return;
     }
-
     try {
-      // Update subscription in the backend
       const response = await axios.put(
-        "http://localhost:5000/api/user/subscription", // Assuming this is the API endpoint for updating the subscription
+        "http://localhost:5000/api/user/subscription",
         { subscription: selectedPlan },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Update subscription details in the frontend after successful backend update
       setSubscriptionDetails(response.data.subscription);
       alert(`Subscribed to ${selectedPlan} plan!`);
     } catch (error) {
       console.error("Error updating subscription:", error);
       alert("Failed to update subscription. Please try again.");
     }
-
     setShowUpgradeModal(false);
   };
 
@@ -115,7 +130,6 @@ const Profile = () => {
     <div className="profile-container">
       <div className="profile-card">
         <h2>Profile Details</h2>
-
         {!isEditing ? (
           <div className="profile-details">
             <p>
@@ -154,12 +168,10 @@ const Profile = () => {
             </button>
           </div>
         )}
-
         <button onClick={handleUpgradeClick} className="upgrade-button">
           Upgrade Subscription
         </button>
       </div>
-
       <div className="history-card">
         <h3 onClick={() => setShowReadingHistory(!showReadingHistory)}>
           Reading History {showReadingHistory ? "▲" : "▼"}
@@ -178,7 +190,6 @@ const Profile = () => {
           </div>
         )}
       </div>
-
       <div className="history-card">
         <h3 onClick={() => setShowSavedArticles(!showSavedArticles)}>
           Saved Articles {showSavedArticles ? "▲" : "▼"}
@@ -197,8 +208,6 @@ const Profile = () => {
           </div>
         )}
       </div>
-
-      {/* Upgrade Subscription Modal */}
       {showUpgradeModal && (
         <div className="modal">
           <div className="modal-content">
@@ -232,7 +241,6 @@ const Profile = () => {
                 <p>$0.5 per day, immediate access to latest news.</p>
               </div>
             </div>
-
             {showCardForm && (
               <div className="card-form">
                 <h4>Enter Card Details</h4>
@@ -262,7 +270,6 @@ const Profile = () => {
                 />
               </div>
             )}
-
             <button onClick={handleUpgradeSubscription} className="save-button">
               Confirm Subscription
             </button>

@@ -19,6 +19,7 @@ const CommentSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
 const ArticleSchema = new mongoose.Schema({
   title: String,
   content: String,
@@ -50,6 +51,13 @@ const ArticleSchema = new mongoose.Schema({
     },
   ],
   comments: [CommentSchema], // Array of comments
+});
+
+// Pre-save hook to clean up null values in likedBy and dislikedBy arrays
+ArticleSchema.pre("save", function (next) {
+  this.likedBy = this.likedBy.filter((id) => id !== null);
+  this.dislikedBy = this.dislikedBy.filter((id) => id !== null);
+  next();
 });
 
 module.exports = mongoose.model("Article", ArticleSchema);
