@@ -3,13 +3,21 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background-color: #f5f5f5;
+  background-color: white;
   border-bottom: 1px solid #ddd;
+  flex-wrap: wrap; /* Ensures wrapping on smaller screens */
 }
 
 .navbar-brand {
   font-size: 1.5rem;
   font-weight: bold;
+  cursor: pointer;
+}
+
+.navbar-categories {
+  display: flex;
+  flex-wrap: wrap; /* Ensures categories wrap on smaller screens */
+  margin: 10px 0;
 }
 
 .navbar-categories button {
@@ -18,6 +26,8 @@
   margin: 0 10px;
   font-size: 1rem;
   cursor: pointer;
+  transition: color 0.3s ease, text-decoration 0.3s ease;
+  color: black;
 }
 
 .navbar-categories button:hover {
@@ -25,20 +35,33 @@
   text-decoration: underline;
 }
 
+.navbar-categories button.active {
+  color: #007bff; /* Highlight active category */
+  font-weight: bold;
+}
+
 .navbar-search {
   display: flex;
   align-items: center;
+  margin: 10px 0;
 }
 
 .navbar-search input {
-  padding: 5px;
+  padding: 8px;
   font-size: 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid #c2bdbd;
   border-radius: 4px;
+  width: 200px;
+  transition: border-color 0.3s ease;
+}
+
+.navbar-search input:focus {
+  border-color: #007bff;
+  outline: none;
 }
 
 .navbar-search button {
-  padding: 5px 10px;
+  padding: 8px 12px;
   font-size: 1rem;
   margin-left: 5px;
   background-color: #007bff;
@@ -46,10 +69,15 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .navbar-search button:hover {
   background-color: #0056b3;
+}
+
+.navbar-profile {
+  margin: 10px 0;
 }
 
 .navbar-profile button {
@@ -57,8 +85,41 @@
   background: none;
   border: none;
   cursor: pointer;
+  transition: color 0.3s ease;
+  color: black;
 }
 
 .navbar-profile button:hover {
   color: #007bff;
+}
+
+.add-article-btn {
+  margin-right: 10px;
+  padding: 8px 12px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-article-btn:hover {
+  background-color: #45a049;
+}
+
+/* Media Query for Mobile Screens */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar-categories {
+    justify-content: flex-start;
+  }
+
+  .navbar-search input {
+    width: 100%; /* Expand search box to full width */
+  }
 }

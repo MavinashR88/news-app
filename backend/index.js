@@ -1,4 +1,3 @@
-// backend/index.js
 require("dotenv").config(); // Ensure this is the first line
 const express = require("express");
 const cors = require("cors");
@@ -7,9 +6,7 @@ const connectDB = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const articleRoutes = require("./routes/articleRoutes");
 const authRoutes = require("./routes/authRoutes");
-const adminUserRoutes = require("./routes/adminUserRoutes"); // Admin user management routes
-const adminArticleRoutes = require("./routes/adminArticleRoutes"); // Admin article management routes
-const adminRoutes = require("./routes/adminRoutes");
+const adminRoutes = require("./routes/adminRoutes"); // Admin routes
 
 const app = express();
 
@@ -24,9 +21,7 @@ connectDB();
 app.use("/api/auth", authRoutes); // Authentication routes
 app.use("/api/user", userRoutes); // User routes for profile and other user-specific tasks
 app.use("/api/articles", articleRoutes); // General article routes
-app.use("/api/admin/users", adminUserRoutes); // Admin-specific user management routes
-app.use("/api/admin/articles", adminArticleRoutes); // Admin-specific article management routes
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminRoutes); // Admin-specific routes
 
 // Test route for quick server checks
 app.get("/api/test", (req, res) => {

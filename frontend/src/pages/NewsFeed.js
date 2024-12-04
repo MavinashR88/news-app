@@ -1,212 +1,263 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import CustomerNavbar from "./CustomerNavbar";
 import NewsPop from "./NewsPop";
+import CustomerNavbar from "./CustomerNavbar";
 import "./NewsFeed.css";
 
 const NewsFeed = () => {
   const [articles, setArticles] = useState([]);
-  const [topArticles, setTopArticles] = useState([]);
+  const [filteredArticles, setFilteredArticles] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [isGridView, setIsGridView] = useState(false);
+
   const [popularArticles, setPopularArticles] = useState([]);
   const [latestArticles, setLatestArticles] = useState([]);
-  const [sourceFilteredArticles, setSourceFilteredArticles] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedSource, setSelectedSource] = useState("");
-  const [isGridView, setIsGridView] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const userId = localStorage.getItem("userId"); // Retrieve user ID from localStorage
-
-  const token = localStorage.getItem("authToken"); // Retrieve token from localStorage
+  const [cnnArticles, setCnnArticles] = useState([]);
+  const [generalArticles, setGeneralArticles] = useState([]);
+  const [androidCentralArticles, setAndroidCentralArticles] = useState([]);
+  const [gizmodoArticles, setGizmodoArticles] = useState([]);
+  const [vergeArticles, setVergeArticles] = useState([]);
 
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/articles", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setArticles(res.data);
+        const response = await axios.get("http://localhost:5000/api/articles");
+        const allArticles = response.data || [];
+        setArticles(allArticles);
+        setFilteredArticles(allArticles);
 
-        // Filter sections
-        setTopArticles(res.data.slice(0, 5)); // Assuming top articles are the first 5 for simplicity
-        setPopularArticles(
-          res.data.sort((a, b) => b.likes - a.likes).slice(0, 5)
-        ); // Most liked articles as popular
-        setLatestArticles(
-          res.data.sort(
-            (a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)
-          )
-        ); // Latest articles based on published date
+        // Categorize articles
+        const sortedByViews = [...allArticles].sort(
+          (a, b) => b.viewCount - a.viewCount
+        );
+        setPopularArticles(sortedByViews.slice(0, 10));
+        setLatestArticles(allArticles.slice(0, 10));
+        setCnnArticles(
+          allArticles.filter((article) => article.source === "CNN").slice(0, 10)
+        );
+        setGeneralArticles(allArticles.slice(0, 10));
+        setAndroidCentralArticles(
+          allArticles
+            .filter((article) => article.source === "Android Central")
+            .slice(0, 10)
+        );
+        setGizmodoArticles(
+          allArticles
+            .filter((article) => article.source === "Gizmodo.com")
+            .slice(0, 10)
+        );
+        setVergeArticles(
+          allArticles
+            .filter((article) => article.source === "The Verge")
+            .slice(0, 10)
+        );
       } catch (error) {
         console.error("Error fetching articles:", error);
       }
     };
 
     fetchArticles();
-  }, [token]);
+  }, []);
 
-  const handleArticleClick = (article) => {
-    markAsRead(article._id);
+  const handleArticleClick = async (article) => {
     setSelectedArticle(article);
+
+    try {
+      // Increment the article's view count
+      const updatedViewCount = article.viewCount + 1;
+      await axios.post(
+        `http://localhost:5000/api/articles/${article._id}/update`,
+        { viewCount: updatedViewCount }
+      );
+
+      // Save the article in the user's read history
+      const userId = localStorage.getItem("userId"); // Assume userId is stored in localStorage
+      await axios.post("http://localhost:5000/api/user/history", {
+        userId,
+        articleId: article._id,
+      });
+
+      console.log("Article view count incremented and saved in read history.");
+    } catch (error) {
+      console.error(
+        "Error updating article data:",
+        error.response?.data || error.message
+      );
+    }
   };
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
-    setIsGridView(category !== "All");
+    setIsGridView(true);
+
     if (category === "All") {
-      setSourceFilteredArticles(articles);
+      setIsGridView(false);
+      setFilteredArticles(articles);
     } else {
       const filtered = articles.filter(
-        (article) => article.category === category
+        (article) =>
+          article.category &&
+          article.category.toLowerCase() === category.toLowerCase()
       );
-      setSourceFilteredArticles(filtered);
+      setFilteredArticles(filtered);
     }
   };
 
-  const handleSourceChange = (source) => {
-    setSelectedSource(source);
-    const filteredBySource = articles.filter(
-      (article) => article.source === source
+  const renderTwoColumnLayout = (title, featuredArticle, sideArticles) => {
+    if (!featuredArticle || !sideArticles) return null;
+
+    return (
+      <section className="two-column-section">
+        <h2>{title}</h2>
+        <div className="two-column-layout">
+          {/* Featured Article */}
+          {featuredArticle && (
+            <div
+              className="featured-article"
+              onClick={() => handleArticleClick(featuredArticle)}
+            >
+              <img
+                src={featuredArticle.urlToImage}
+                alt={featuredArticle.title}
+              />
+              <h3>{featuredArticle.title}</h3>
+              <p>
+                {featuredArticle.content?.slice(0, 150) ||
+                  "No content available"}
+                ...
+              </p>
+              <div className="extra-details">
+                <span>Source: {featuredArticle.source || "Unknown"}</span>
+                <span>
+                  Date: {new Date(featuredArticle.date).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Side Articles */}
+          <div className="side-articles">
+            {sideArticles.map((article) => (
+              <div
+                key={article._id}
+                className="side-article"
+                onClick={() => handleArticleClick(article)}
+              >
+                <img src={article.urlToImage} alt={article.title} />
+                <div>
+                  <h4>{article.title}</h4>
+                  <p>{article.source || "Unknown Source"}</p>
+                  <p className="details">
+                    Published: {new Date(article.date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     );
-    setSourceFilteredArticles(filteredBySource);
   };
 
-  const saveArticle = async (articleId) => {
-    try {
-      await axios.post(
-        "http://localhost:5000/api/user/save-article",
-        { userId, articleId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      console.log("Article saved successfully!");
-    } catch (error) {
-      console.error("Error saving article:", error);
-    }
+  const renderHorizontalSlider = (title, articles) => {
+    if (!articles || articles.length === 0) return null;
+
+    return (
+      <section className="horizontal-slider-section">
+        <h2>{title}</h2>
+        <div className="horizontal-slider">
+          {articles.map((article) => (
+            <div
+              key={article._id}
+              className="article-card"
+              onClick={() => handleArticleClick(article)}
+            >
+              <img src={article.urlToImage} alt={article.title} />
+              <div className="article-card-details">
+                <h3>{article.title}</h3>
+                <p>{article.source || "Unknown Source"}</p>
+                <p>{new Date(article.date).toLocaleDateString()}</p>
+                <p>
+                  {article.content?.slice(0, 100) || "No content available"}...
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
   };
 
-  const markAsRead = async (articleId) => {
-    try {
-      await axios.post(
-        "http://localhost:5000/api/user/mark-as-read",
-        { userId, articleId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      console.log("Article marked as read!");
-    } catch (error) {
-      console.error("Error marking article as read:", error);
-    }
+  const renderGridLayout = (title, articles) => {
+    return (
+      <section className="grid-layout-section">
+        <h2>{title}</h2>
+        <div className="grid-container">
+          {articles.map((article) => (
+            <div
+              key={article._id}
+              className="grid-card"
+              onClick={() => handleArticleClick(article)}
+            >
+              <img src={article.urlToImage} alt={article.title} />
+              <h3>{article.title}</h3>
+              <p>
+                {article.content?.slice(0, 100) || "No content available"}...
+              </p>
+              <span>Source: {article.source || "Unknown Source"}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
   };
 
   return (
     <div className="newsfeed-container">
       <CustomerNavbar
         onCategoryChange={handleCategoryChange}
-        onSourceChange={handleSourceChange}
+        onHomeClick={() => {
+          setSelectedCategory("All");
+          setFilteredArticles(articles);
+          setIsGridView(false);
+        }}
       />
 
-      {/* Top News Section */}
-      <section className="top-news-section">
-        <h2>Top News</h2>
-        <div className="top-news-scroll">
-          {topArticles.map((article) => (
-            <div
-              key={article._id}
-              className="top-news-card"
-              onClick={() => handleArticleClick(article)}
-            >
-              <img src={article.urlToImage} alt={article.title} />
-              <h3>{article.title}</h3>
-              <p>{article.content.slice(0, 80)}...</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Popular Articles Section */}
-      <section className="popular-articles-section">
-        <h2>Popular Articles</h2>
-        <div className="grid-container">
-          {popularArticles.map((article) => (
-            <div
-              key={article._id}
-              className="grid-card"
-              onClick={() => handleArticleClick(article)}
-            >
-              <img src={article.urlToImage} alt={article.title} />
-              <h3>{article.title}</h3>
-              <p>{article.content.slice(0, 100)}...</p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  saveArticle(article._id);
-                }}
-              >
-                Save
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Latest News Section */}
-      <section className="latest-news-section">
-        <h2>Latest News</h2>
-        <div className="grid-container">
-          {latestArticles.slice(0, 5).map((article) => (
-            <div
-              key={article._id}
-              className="grid-card"
-              onClick={() => handleArticleClick(article)}
-            >
-              <img src={article.urlToImage} alt={article.title} />
-              <h3>{article.title}</h3>
-              <p>{article.content.slice(0, 100)}...</p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  saveArticle(article._id);
-                }}
-              >
-                Save
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Filtered by Source Section */}
-      {selectedSource && (
-        <section className="source-filtered-section">
-          <h2>{selectedSource} News</h2>
-          <div className="grid-container">
-            {sourceFilteredArticles.map((article) => (
-              <div
-                key={article._id}
-                className="grid-card"
-                onClick={() => handleArticleClick(article)}
-              >
-                <img src={article.urlToImage} alt={article.title} />
-                <h3>{article.title}</h3>
-                <p>{article.content.slice(0, 100)}...</p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    saveArticle(article._id);
-                  }}
-                >
-                  Save
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
+      {isGridView ? (
+        renderGridLayout(`${selectedCategory} News`, filteredArticles)
+      ) : (
+        <>
+          {renderTwoColumnLayout(
+            "Popular News",
+            popularArticles[0],
+            popularArticles.slice(1, 6)
+          )}
+          {renderHorizontalSlider("Latest News", latestArticles)}
+          {renderTwoColumnLayout(
+            "CNN News",
+            cnnArticles[0],
+            cnnArticles.slice(1, 6)
+          )}
+          {renderHorizontalSlider("General News", generalArticles)}
+          {renderTwoColumnLayout(
+            "Android Central News",
+            androidCentralArticles[0],
+            androidCentralArticles.slice(1, 6)
+          )}
+          {renderHorizontalSlider("Gizmodo News", gizmodoArticles)}
+          {renderTwoColumnLayout(
+            "The Verge News",
+            vergeArticles[0],
+            vergeArticles.slice(1, 6)
+          )}
+        </>
       )}
 
-      {/* Article Popup */}
       {selectedArticle && (
         <NewsPop
           article={selectedArticle}
           onClose={() => setSelectedArticle(null)}
-          userId={userId}
         />
       )}
     </div>

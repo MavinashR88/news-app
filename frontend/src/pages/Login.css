@@ -87,3 +87,17 @@
 .options a:hover {
   color: #8e44ad;
 }
+
+/* Add this to Login.css */
+.signup-redirect-btn {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.signup-redirect-btn:hover {
+  color: #0056b3;
+}

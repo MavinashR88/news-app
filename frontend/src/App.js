@@ -7,6 +7,7 @@ import NewsFeed from "./pages/NewsFeed";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProviderDashboard from "./pages/ProviderDashboard";
 import Profile from "./pages/Profile";
+import AddArticlePage from "./pages/AddArticlePage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/provider" element={<ProviderDashboard />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/add-article" element={<AddArticlePage />} />
     </Routes>
   );
 }

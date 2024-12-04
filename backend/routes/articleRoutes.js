@@ -55,7 +55,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Like an article
 router.post("/:id/like", async (req, res) => {
   const { userId } = req.body;
 
@@ -63,26 +62,28 @@ router.post("/:id/like", async (req, res) => {
     const article = await Article.findById(req.params.id);
     if (!article) return res.status(404).json({ message: "Article not found" });
 
-    if (article.likedBy.includes(userId)) {
-      return res
-        .status(400)
-        .json({ message: "User has already liked this article" });
+    // Ensure this user can independently like the article
+    if (!article.likedBy.includes(userId)) {
+      // Remove user from dislikedBy array if they disliked earlier
+      article.dislikedBy = article.dislikedBy.filter(
+        (id) => id.toString() !== userId
+      );
+
+      // Add user to likedBy array and increment the like count
+      article.likes += 1;
+      article.likedBy.push(userId);
     }
 
-    article.dislikedBy = article.dislikedBy.filter(
-      (id) => id.toString() !== userId
-    );
-    article.likes += 1;
-    article.likedBy.push(userId);
-
     await article.save();
-    res.json({ likes: article.likes, dislikes: article.dislikes });
+    res.json({
+      message: "Article liked successfully",
+      likes: article.likes,
+      dislikes: article.dislikes,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-
-// Dislike an article
 router.post("/:id/dislike", async (req, res) => {
   const { userId } = req.body;
 
@@ -90,26 +91,61 @@ router.post("/:id/dislike", async (req, res) => {
     const article = await Article.findById(req.params.id);
     if (!article) return res.status(404).json({ message: "Article not found" });
 
-    if (article.dislikedBy.includes(userId)) {
-      return res
-        .status(400)
-        .json({ message: "User has already disliked this article" });
+    // Ensure this user can independently dislike the article
+    if (!article.dislikedBy.includes(userId)) {
+      // Remove user from likedBy array if they liked earlier
+      article.likedBy = article.likedBy.filter(
+        (id) => id.toString() !== userId
+      );
+
+      // Add user to dislikedBy array and increment the dislike count
+      article.dislikes += 1;
+      article.dislikedBy.push(userId);
     }
 
-    article.likedBy = article.likedBy.filter((id) => id.toString() !== userId);
-    article.dislikes += 1;
-    article.dislikedBy.push(userId);
-
     await article.save();
-    res.json({ likes: article.likes, dislikes: article.dislikes });
+    res.json({
+      message: "Article disliked successfully",
+      likes: article.likes,
+      dislikes: article.dislikes,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+// Increment view count and save to read history
+router.post("/:id/update", async (req, res) => {
+  const { viewCount } = req.body;
+  const userId = req.body.userId;
+
+  try {
+    const article = await Article.findById(req.params.id);
+    if (!article) return res.status(404).json({ message: "Article not found" });
+
+    article.viewCount = viewCount;
+    await article.save();
+
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user && !user.readingHistory.includes(article._id)) {
+        user.readingHistory.push(article._id);
+        await user.save();
+      }
+    }
+
+    res.status(200).json({ message: "View count updated and history saved." });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating view count." });
   }
 });
 
 // Comment on an article
 router.post("/:id/comment", async (req, res) => {
   const { userId, content } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: "User ID is required." });
+  }
 
   try {
     const user = await User.findById(userId);
@@ -128,9 +164,14 @@ router.post("/:id/comment", async (req, res) => {
     article.comments.push(comment);
     await article.save();
 
-    res.json(article.comments);
+    res
+      .status(200)
+      .json({
+        message: "Comment added successfully",
+        comments: article.comments,
+      });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Error adding comment." });
   }
 });
 

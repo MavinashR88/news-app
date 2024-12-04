@@ -22,11 +22,14 @@ const Login = () => {
       localStorage.setItem("authToken", token); // Store token in localStorage
 
       if (role === "admin") navigate("/admin");
-      else if (role === "provider") navigate("/provider");
       else navigate("/newsfeed");
     } catch (error) {
       setError("Login failed. Please check your credentials.");
     }
+  };
+
+  const handleSignupRedirect = () => {
+    navigate("/signup");
   };
 
   return (
@@ -55,6 +58,16 @@ const Login = () => {
           </div>
           <button type="submit">Login</button>
         </form>
+        <p>
+          Don't have an account?{" "}
+          <button
+            type="button"
+            className="signup-redirect-btn"
+            onClick={handleSignupRedirect}
+          >
+            Sign Up
+          </button>
+        </p>
       </div>
     </div>
   );

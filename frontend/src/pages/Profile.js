@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./Profile.css"; // Ensure this contains the necessary styling
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const [userData, setUserData] = useState({});
@@ -9,17 +10,13 @@ const Profile = () => {
   const [formData, setFormData] = useState({ name: "", email: "" });
   const [readingHistory, setReadingHistory] = useState([]);
   const [savedArticles, setSavedArticles] = useState([]);
+  const [publishedArticles, setPublishedArticles] = useState([]);
   const [subscriptionDetails, setSubscriptionDetails] = useState("");
   const [showReadingHistory, setShowReadingHistory] = useState(false);
   const [showSavedArticles, setShowSavedArticles] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState("");
-  const [showCardForm, setShowCardForm] = useState(false);
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-  });
+  const [showPublishedArticles, setShowPublishedArticles] = useState(false);
+  const [userRole, setUserRole] = useState(""); // For checking the user role
+  const navigate = useNavigate();
   const token = localStorage.getItem("authToken");
 
   useEffect(() => {
@@ -34,12 +31,14 @@ const Profile = () => {
         setUserData(response.data);
         setFormData({ name: response.data.name, email: response.data.email });
         setSubscriptionDetails(response.data.subscription);
+        setUserRole(response.data.role); // Save user role
         setLoading(false);
       } catch (error) {
         console.error("Error fetching profile data:", error);
         setLoading(false);
       }
     };
+
     const fetchReadingHistory = async () => {
       try {
         const response = await axios.get(
@@ -53,6 +52,7 @@ const Profile = () => {
         console.error("Error fetching reading history:", error);
       }
     };
+
     const fetchSavedArticles = async () => {
       try {
         const response = await axios.get(
@@ -66,10 +66,29 @@ const Profile = () => {
         console.error("Error fetching saved articles:", error);
       }
     };
+
+    const fetchPublishedArticles = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/provider/published-articles",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setPublishedArticles(response.data);
+      } catch (error) {
+        console.error("Error fetching published articles:", error);
+      }
+    };
+
     fetchProfile();
     fetchReadingHistory();
     fetchSavedArticles();
-  }, [token]);
+
+    if (userRole === "provider") {
+      fetchPublishedArticles();
+    }
+  }, [token, userRole]);
 
   const handleEdit = () => setIsEditing(true);
   const handleInputChange = (e) => {
@@ -93,35 +112,8 @@ const Profile = () => {
     }
   };
 
-  const handleUpgradeClick = () => setShowUpgradeModal(true);
-  const handlePlanSelection = (plan) => {
-    setSelectedPlan(plan);
-    setShowCardForm(plan !== "Free"); // Show card form only for paid plans
-  };
-  const handleCardInputChange = (e) => {
-    const { name, value } = e.target;
-    setCardDetails({ ...cardDetails, [name]: value });
-  };
-
-  const handleUpgradeSubscription = async () => {
-    if (selectedPlan === "Free") {
-      setSubscriptionDetails("Free");
-      setShowUpgradeModal(false);
-      return;
-    }
-    try {
-      const response = await axios.put(
-        "http://localhost:5000/api/user/subscription",
-        { subscription: selectedPlan },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setSubscriptionDetails(response.data.subscription);
-      alert(`Subscribed to ${selectedPlan} plan!`);
-    } catch (error) {
-      console.error("Error updating subscription:", error);
-      alert("Failed to update subscription. Please try again.");
-    }
-    setShowUpgradeModal(false);
+  const handleAddArticleClick = () => {
+    navigate("/add-article"); // Redirect to add article page
   };
 
   if (loading) return <p>Loading...</p>;
@@ -168,10 +160,20 @@ const Profile = () => {
             </button>
           </div>
         )}
-        <button onClick={handleUpgradeClick} className="upgrade-button">
-          Upgrade Subscription
-        </button>
       </div>
+
+      {/* Add Article Button for Providers */}
+      {userRole === "provider" && (
+        <div className="add-article-section">
+          <button
+            onClick={handleAddArticleClick}
+            className="add-article-button"
+          >
+            Add Article
+          </button>
+        </div>
+      )}
+
       <div className="history-card">
         <h3 onClick={() => setShowReadingHistory(!showReadingHistory)}>
           Reading History {showReadingHistory ? "▲" : "▼"}
@@ -190,6 +192,7 @@ const Profile = () => {
           </div>
         )}
       </div>
+
       <div className="history-card">
         <h3 onClick={() => setShowSavedArticles(!showSavedArticles)}>
           Saved Articles {showSavedArticles ? "▲" : "▼"}
@@ -208,78 +211,26 @@ const Profile = () => {
           </div>
         )}
       </div>
-      {showUpgradeModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h3>Select a Subscription Plan</h3>
-            <div className="plan-options">
-              <div
-                className={`plan-card ${
-                  selectedPlan === "Free" ? "selected" : ""
-                }`}
-                onClick={() => handlePlanSelection("Free")}
-              >
-                <h4>Free</h4>
-                <p>Delayed news updates.</p>
-              </div>
-              <div
-                className={`plan-card ${
-                  selectedPlan === "Monthly" ? "selected" : ""
-                }`}
-                onClick={() => handlePlanSelection("Monthly")}
-              >
-                <h4>Monthly</h4>
-                <p>$1 per day, immediate access to latest news.</p>
-              </div>
-              <div
-                className={`plan-card ${
-                  selectedPlan === "Yearly" ? "selected" : ""
-                }`}
-                onClick={() => handlePlanSelection("Yearly")}
-              >
-                <h4>Yearly</h4>
-                <p>$0.5 per day, immediate access to latest news.</p>
-              </div>
+
+      {/* Published Articles Section for Providers */}
+      {userRole === "provider" && (
+        <div className="history-card">
+          <h3 onClick={() => setShowPublishedArticles(!showPublishedArticles)}>
+            Published Articles {showPublishedArticles ? "▲" : "▼"}
+          </h3>
+          {showPublishedArticles && (
+            <div>
+              {publishedArticles.length > 0 ? (
+                <ul>
+                  {publishedArticles.map((article, index) => (
+                    <li key={index}>{article.title}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No published articles available.</p>
+              )}
             </div>
-            {showCardForm && (
-              <div className="card-form">
-                <h4>Enter Card Details</h4>
-                <input
-                  type="text"
-                  name="cardNumber"
-                  placeholder="Card Number"
-                  value={cardDetails.cardNumber}
-                  onChange={handleCardInputChange}
-                  className="input-field"
-                />
-                <input
-                  type="text"
-                  name="expiryDate"
-                  placeholder="Expiry Date (MM/YY)"
-                  value={cardDetails.expiryDate}
-                  onChange={handleCardInputChange}
-                  className="input-field"
-                />
-                <input
-                  type="text"
-                  name="cvv"
-                  placeholder="CVV"
-                  value={cardDetails.cvv}
-                  onChange={handleCardInputChange}
-                  className="input-field"
-                />
-              </div>
-            )}
-            <button onClick={handleUpgradeSubscription} className="save-button">
-              Confirm Subscription
-            </button>
-            <button
-              onClick={() => setShowUpgradeModal(false)}
-              className="cancel-button"
-            >
-              Cancel
-            </button>
-          </div>
+          )}
         </div>
       )}
     </div>

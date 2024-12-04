@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const CommentSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -26,10 +25,12 @@ const ArticleSchema = new mongoose.Schema({
   author: String,
   source: String,
   publishedAt: Date,
+  // date: date || new Date(),
   url: String,
   urlToImage: String,
   category: String,
   tags: [String],
+  viewCount: { type: Number, default: 0 },
   likes: {
     type: Number,
     default: 0,
@@ -60,4 +61,4 @@ ArticleSchema.pre("save", function (next) {
   next();
 });
 
-module.exports = mongoose.model("Article", ArticleSchema);
+module.exports = mongoose.model("Article", ArticleSchema, "articles");

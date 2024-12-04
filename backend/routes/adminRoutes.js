@@ -1,18 +1,27 @@
-// backend/routes/adminRoutes.js
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User"); // Adjust the path as necessary
-const verifyToken = require("../middlewares/authMiddleware"); // Ensure only admins have access
+const adminController = require("../controllers/adminController");
+const verifyToken = require("../middlewares/authMiddleware"); // Middleware to verify the token
+const checkAdmin = require("../middlewares/checkAdmin"); // Middleware to check if the user is an admin
 
-// Route to get all users
-router.get("/users", verifyToken, async (req, res) => {
-  try {
-    const users = await User.find({});
-    res.json(users);
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ error: "Failed to fetch users" });
-  }
-});
+// Use verifyToken and checkAdmin on all routes to restrict them to authenticated admins only
+router.use(verifyToken, checkAdmin);
+
+// User Management Routes
+router.get("/users", adminController.getAllUsers); // Get all users
+router.post("/users", adminController.addUser); // Add a new user
+router.delete("/users/:id", adminController.deleteUser); // Delete a user by ID
+
+// Article Management Routes
+router.get("/articles", adminController.getAllArticles); // Get all articles
+router.post("/articles", adminController.addArticle); // Add a new article
+router.delete("/articles/:id", adminController.deleteArticle); // Delete an article by ID
+
+// Category Management Routes
+router.get("/categories", adminController.getAllCategories); // Get all categories
+router.post("/categories", adminController.addCategory); // Add a new category
+
+// Analytics Route
+router.get("/analytics", adminController.getAnalyticsData); // Get analytics data
 
 module.exports = router;
