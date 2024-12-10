@@ -4,6 +4,16 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Login.css";
 
+import { jwtDecode } from "jwt-decode"; // Use named import
+
+const token = localStorage.getItem("authToken"); // Retrieve the token
+if (!token) {
+  console.error("No token found in localStorage");
+}
+
+const decodedToken = jwtDecode(token);
+console.log(decodedToken);
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,13 +28,25 @@ const Login = () => {
         { email, password }
       );
 
-      const { token, role } = response.data;
+      const { token, role, userId, passwordChangeRequired } = response.data; // Extract passwordChangeRequired
       localStorage.setItem("authToken", token); // Store token in localStorage
+      localStorage.setItem("userId", userId); // Store userId in localStorage
 
-      if (role === "admin") navigate("/admin");
-      else navigate("/newsfeed");
+      if (passwordChangeRequired) {
+        // Redirect to password change page if required
+        navigate("/change-password");
+      } else if (role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/newsfeed");
+      }
     } catch (error) {
-      setError("Login failed. Please check your credentials.");
+      console.error("Login error:", error.response?.data || error.message);
+      if (error.response?.status === 403) {
+        setError("Your account has been blocked. Please contact support.");
+      } else {
+        setError("Login failed. Please check your credentials.");
+      }
     }
   };
 

@@ -1,8 +1,9 @@
-// backend/models/Category.js
 const mongoose = require("mongoose");
 
 const CategorySchema = new mongoose.Schema({
-  name: String,
+  name: { type: String, required: true, unique: true }, // Unique category name
+  description: { type: String }, // Optional description
+  createdDate: { type: Date, default: Date.now }, // Auto-set creation date
 });
 
-module.exports = mongoose.model("Category", CategorySchema);
+module.exports = mongoose.model("Categories", CategorySchema);

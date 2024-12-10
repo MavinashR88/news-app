@@ -19,75 +19,89 @@ const NewsFeed = () => {
   const [gizmodoArticles, setGizmodoArticles] = useState([]);
   const [vergeArticles, setVergeArticles] = useState([]);
 
+  const userId = localStorage.getItem("userId");
+  const token = localStorage.getItem("authToken");
+
+  // Fetch all articles on load
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/articles");
+        console.log("Fetching all articles...");
+        const response = await axios.get("http://localhost:5000/api/articles", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const allArticles = response.data || [];
         setArticles(allArticles);
         setFilteredArticles(allArticles);
-
-        // Categorize articles
-        const sortedByViews = [...allArticles].sort(
-          (a, b) => b.viewCount - a.viewCount
-        );
-        setPopularArticles(sortedByViews.slice(0, 10));
-        setLatestArticles(allArticles.slice(0, 10));
-        setCnnArticles(
-          allArticles.filter((article) => article.source === "CNN").slice(0, 10)
-        );
-        setGeneralArticles(allArticles.slice(0, 10));
-        setAndroidCentralArticles(
-          allArticles
-            .filter((article) => article.source === "Android Central")
-            .slice(0, 10)
-        );
-        setGizmodoArticles(
-          allArticles
-            .filter((article) => article.source === "Gizmodo.com")
-            .slice(0, 10)
-        );
-        setVergeArticles(
-          allArticles
-            .filter((article) => article.source === "The Verge")
-            .slice(0, 10)
-        );
+        categorizeArticles(allArticles);
       } catch (error) {
         console.error("Error fetching articles:", error);
       }
     };
 
     fetchArticles();
-  }, []);
+  }, [token]);
 
+  // Categorize articles
+  const categorizeArticles = (allArticles) => {
+    if (!allArticles || allArticles.length === 0) return;
+
+    // Latest Articles: Sort by publishedDate in descending order
+    const latestSorted = [...allArticles].sort(
+      (a, b) => new Date(b.publishedDate) - new Date(a.publishedDate)
+    );
+    setLatestArticles(latestSorted.slice(0, 10)); // Top 10 latest articles
+
+    // Popular Articles: Sort by likes in descending order
+    const popularSorted = [...allArticles].sort(
+      (a, b) => b.likes - a.likes // Sorting by likes
+    );
+    setPopularArticles(popularSorted.slice(0, 10)); // Top 10 popular articles
+
+    // Categorizing based on sources (CNN, General, etc.)
+    setCnnArticles(
+      allArticles.filter((article) => article.source === "CNN").slice(0, 10)
+    );
+    setGeneralArticles(allArticles.slice(0, 10));
+    setAndroidCentralArticles(
+      allArticles
+        .filter((article) => article.source === "Android Central")
+        .slice(0, 10)
+    );
+    setGizmodoArticles(
+      allArticles
+        .filter((article) => article.source === "Gizmodo.com")
+        .slice(0, 10)
+    );
+    setVergeArticles(
+      allArticles
+        .filter((article) => article.source === "The Verge")
+        .slice(0, 10)
+    );
+  };
+
+  // Handle article click
   const handleArticleClick = async (article) => {
     setSelectedArticle(article);
-
     try {
-      // Increment the article's view count
-      const updatedViewCount = article.viewCount + 1;
       await axios.post(
-        `http://localhost:5000/api/articles/${article._id}/update`,
-        { viewCount: updatedViewCount }
+        `http://localhost:5000/api/users/${userId}/mark-read`,
+        { articleId: article._id },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Save the article in the user's read history
-      const userId = localStorage.getItem("userId"); // Assume userId is stored in localStorage
-      await axios.post("http://localhost:5000/api/user/history", {
-        userId,
-        articleId: article._id,
-      });
-
-      console.log("Article view count incremented and saved in read history.");
+      console.log(`Article ${article._id} marked as read.`);
     } catch (error) {
       console.error(
-        "Error updating article data:",
+        "Error marking article as read:",
         error.response?.data || error.message
       );
+      alert("Failed to update article data.");
     }
   };
 
-  const handleCategoryChange = (category) => {
+  // Handle category change
+  const handleCategoryChange = async (category) => {
+    console.log("Category selected:", category);
     setSelectedCategory(category);
     setIsGridView(true);
 
@@ -95,15 +109,19 @@ const NewsFeed = () => {
       setIsGridView(false);
       setFilteredArticles(articles);
     } else {
-      const filtered = articles.filter(
-        (article) =>
-          article.category &&
-          article.category.toLowerCase() === category.toLowerCase()
-      );
-      setFilteredArticles(filtered);
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/articles/search",
+          { params: { category } }
+        );
+        setFilteredArticles(response.data);
+      } catch (error) {
+        console.error("Error filtering articles by category:", error);
+      }
     }
   };
 
+  // Render layouts
   const renderTwoColumnLayout = (title, featuredArticle, sideArticles) => {
     if (!featuredArticle || !sideArticles) return null;
 
@@ -111,32 +129,28 @@ const NewsFeed = () => {
       <section className="two-column-section">
         <h2>{title}</h2>
         <div className="two-column-layout">
-          {/* Featured Article */}
-          {featuredArticle && (
-            <div
-              className="featured-article"
-              onClick={() => handleArticleClick(featuredArticle)}
-            >
-              <img
-                src={featuredArticle.urlToImage}
-                alt={featuredArticle.title}
-              />
-              <h3>{featuredArticle.title}</h3>
-              <p>
-                {featuredArticle.content?.slice(0, 150) ||
-                  "No content available"}
-                ...
-              </p>
-              <div className="extra-details">
-                <span>Source: {featuredArticle.source || "Unknown"}</span>
-                <span>
-                  Date: {new Date(featuredArticle.date).toLocaleDateString()}
-                </span>
-              </div>
+          <div
+            className="featured-article"
+            onClick={() => handleArticleClick(featuredArticle)}
+          >
+            <img
+              src={featuredArticle.picture || "placeholder.jpg"}
+              alt={featuredArticle.title}
+            />
+            <h3>{featuredArticle.title}</h3>
+            <p>
+              {featuredArticle.content?.slice(0, 150) || "No content available"}
+              ...
+            </p>
+            <div className="extra-details">
+              <span>Source: {featuredArticle.source || "Unknown"}</span>
+              <span>
+                Date:{" "}
+                {new Date(featuredArticle.publishedDate).toLocaleDateString()}
+              </span>
             </div>
-          )}
+          </div>
 
-          {/* Side Articles */}
           <div className="side-articles">
             {sideArticles.map((article) => (
               <div
@@ -144,12 +158,16 @@ const NewsFeed = () => {
                 className="side-article"
                 onClick={() => handleArticleClick(article)}
               >
-                <img src={article.urlToImage} alt={article.title} />
+                <img
+                  src={article.picture || "placeholder.jpg"}
+                  alt={article.title}
+                />
                 <div>
                   <h4>{article.title}</h4>
                   <p>{article.source || "Unknown Source"}</p>
                   <p className="details">
-                    Published: {new Date(article.date).toLocaleDateString()}
+                    Published:{" "}
+                    {new Date(article.publishedDate).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -173,11 +191,14 @@ const NewsFeed = () => {
               className="article-card"
               onClick={() => handleArticleClick(article)}
             >
-              <img src={article.urlToImage} alt={article.title} />
+              <img
+                src={article.picture || "placeholder.jpg"}
+                alt={article.title}
+              />
               <div className="article-card-details">
                 <h3>{article.title}</h3>
                 <p>{article.source || "Unknown Source"}</p>
-                <p>{new Date(article.date).toLocaleDateString()}</p>
+                <p>{new Date(article.publishedDate).toLocaleDateString()}</p>
                 <p>
                   {article.content?.slice(0, 100) || "No content available"}...
                 </p>
@@ -200,7 +221,10 @@ const NewsFeed = () => {
               className="grid-card"
               onClick={() => handleArticleClick(article)}
             >
-              <img src={article.urlToImage} alt={article.title} />
+              <img
+                src={article.picture || "placeholder.jpg"}
+                alt={article.title}
+              />
               <h3>{article.title}</h3>
               <p>
                 {article.content?.slice(0, 100) || "No content available"}...
@@ -258,6 +282,7 @@ const NewsFeed = () => {
         <NewsPop
           article={selectedArticle}
           onClose={() => setSelectedArticle(null)}
+          userId={userId}
         />
       )}
     </div>

@@ -3,10 +3,12 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
-const userRoutes = require("./routes/userRoutes");
-const articleRoutes = require("./routes/articleRoutes");
+// Import routes
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes"); // Admin routes
+const operationsRouter = require("./routes/operation_router");
+const adminUserRoutes = require("./routes/adminUserRoutes"); // Admin user management routes
+const adminArticleRoutes = require("./routes/adminArticleRoutes");
 
 const app = express();
 
@@ -19,9 +21,19 @@ connectDB();
 
 // Routes
 app.use("/api/auth", authRoutes); // Authentication routes
-app.use("/api/user", userRoutes); // User routes for profile and other user-specific tasks
-app.use("/api/articles", articleRoutes); // General article routes
 app.use("/api/admin", adminRoutes); // Admin-specific routes
+app.use("/api/admin/users", adminUserRoutes); // Admin-specific user management routes
+app.use("/api/admin/articles", adminArticleRoutes); // Admin-specific article management routes
+app.use("/api", operationsRouter); // General operation routes
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.url}`);
+  next();
+});
+
+// Root route to handle base URL
+app.get("/", (req, res) => {
+  res.send("Welcome to the News API Server! Navigate to /api for endpoints.");
+});
 
 // Test route for quick server checks
 app.get("/api/test", (req, res) => {

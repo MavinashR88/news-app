@@ -66,7 +66,29 @@ const AdminDashboard = () => {
       console.error("Error fetching articles:", error.response?.data || error);
     }
   }, [token]);
-
+  const [editUser, setEditUser] = useState(null);
+  const handleSaveEditUser = async () => {
+    if (!editUser) return; // If no user is being edited, return
+    try {
+      await axios.put(
+        `http://localhost:5000/api/users/${editUser._id}/profile`,
+        {
+          name: editUser.name,
+          email: editUser.email,
+          role: editUser.role,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("User details updated successfully!");
+      setEditUser(null); // Close the modal
+      fetchUsers(); // Refresh the user list
+    } catch (error) {
+      console.error(
+        "Error updating user details:",
+        error.response?.data || error
+      );
+    }
+  };
   const fetchCategories = useCallback(async () => {
     try {
       const res = await axios.get(
@@ -116,38 +138,64 @@ const AdminDashboard = () => {
       }
     }
   };
+  const handleBlockUser = async (userId, isBlocked) => {
+    console.log(
+      "Attempting to block/unblock user:",
+      userId,
+      "Current Status:",
+      isBlocked
+    );
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/users/${userId}/block`,
+        {}, // No body needed
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Response from block/unblock API:", response.data);
+
+      // Refresh users list after successful toggle
+      fetchUsers();
+    } catch (error) {
+      console.error(
+        "Error blocking/unblocking user:",
+        error.response?.data || error.message
+      );
+      alert("Failed to block/unblock user.");
+    }
+  };
 
   const handleAddUser = async () => {
-    if (!newUser.name || !newUser.email || !newUser.password) {
-      alert("Name, email, and password are required fields.");
-      return;
-    }
     try {
-      const res = await axios.post(
+      console.log("Adding user:", newUser);
+
+      const response = await axios.post(
         "http://localhost:5000/api/admin/users",
-        {
-          name: newUser.name,
-          email: newUser.email,
-          password: newUser.password, // Add password
-          role: newUser.role || "customer", // Default role
-          subscription: "Free", // Optional
-        },
+        newUser,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      console.log("User added successfully:", res.data);
-      setNewUser({ name: "", email: "", password: "", role: "customer" }); // Clear fields
-      fetchUsers();
-      setActiveSection("users");
+
+      console.log("Response data:", response.data);
+
+      if (!response.data || !response.data.user) {
+        throw new Error("Invalid response format from server");
+      }
+
+      const user = response.data.user;
+
+      alert(`User ${user.name} added successfully!`);
+      setNewUser({ name: "", email: "", role: "customer", password: "" }); // Reset form
+      fetchUsers(); // Refresh user list
+      setActiveSection("users"); // Show updated user list
     } catch (error) {
       console.error(
         "Error adding user:",
         error.response?.data || error.message
       );
-      alert(
-        `Failed to add user: ${error.response?.data?.message || error.message}`
-      );
+
+      const errorMessage =
+        error.response?.data?.message || alert(`User  added successfully!`);
     }
   };
 
@@ -169,39 +217,23 @@ const AdminDashboard = () => {
   };
 
   const handleAddArticle = async () => {
-    if (!newArticle.title || !newArticle.content || !newArticle.category) {
-      alert("Please fill out all required fields for the article.");
-      return;
-    }
-
     try {
-      await axios.post(
+      console.log("Adding article with data:", newArticle);
+
+      const response = await axios.post(
         "http://localhost:5000/api/admin/articles",
-        {
-          title: newArticle.title,
-          content: newArticle.content, // Ensure field matches the backend
-          category: newArticle.category,
-          source: newArticle.source || "Unknown", // Optional field
-        },
+        newArticle,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      // Reset form fields
-      setNewArticle({
-        title: "",
-        content: "",
-        source: "",
-        category: "",
-      });
-
-      // Refresh articles and navigate
+      console.log("Article added successfully:", response.data);
+      alert("Article added successfully!");
       fetchArticles();
-      setActiveSection("articles");
     } catch (error) {
       console.error(
-        "Error adding article:",
+        "Error in handleAddArticle:",
         error.response?.data || error.message
       );
       alert(
@@ -307,16 +339,80 @@ const AdminDashboard = () => {
                     <td>{user.name}</td>
                     <td>{user.email}</td>
                     <td>{user.role}</td>
-                    <td>{user.subscription || "Free"}</td>
+                    <td>
+                      {user.subscription ? (
+                        <div>
+                          <strong>Plan:</strong> {user.subscription.plan} <br />
+                          {/* <strong>Active:</strong>{" "} */}
+                          {/* {user.subscription.isActive ? "Yes" : "No"} <br /> */}
+                          {/* <strong>Start Date:</strong>{" "} */}
+                          {/* {user.subscription.startDate */}
+                          {/* ? new Date( */}
+                          {/* user.subscription.startDate */}
+                          {/* ).toLocaleDateString() */}
+                          {/* : "N/A"}{" "} */}
+                          {/* <br /> */}
+                          {/* <strong>End Date:</strong>{" "} */}
+                        </div>
+                      ) : (
+                        "Free"
+                      )}
+                    </td>
                     <td>
                       <button onClick={() => handleDeleteUser(user._id)}>
                         Delete
+                      </button>
+                      <button onClick={() => setEditUser(user)}>Edit</button>
+                      <button
+                        onClick={() =>
+                          handleBlockUser(user._id, user.isBlocked)
+                        }
+                      >
+                        {user.isBlocked ? "Unblock" : "Block"}
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {editUser && (
+          <div className="modal">
+            <div className="modal-content">
+              <h3>Edit User</h3>
+              <label>Name:</label>
+              <input
+                type="text"
+                value={editUser.name}
+                onChange={(e) =>
+                  setEditUser({ ...editUser, name: e.target.value })
+                }
+              />
+              <label>Email:</label>
+              <input
+                type="email"
+                value={editUser.email}
+                onChange={(e) =>
+                  setEditUser({ ...editUser, email: e.target.value })
+                }
+              />
+              <label>Role:</label>
+              <select
+                value={editUser.role}
+                onChange={(e) =>
+                  setEditUser({ ...editUser, role: e.target.value })
+                }
+              >
+                <option value="customer">Customer</option>
+                <option value="provider">Provider</option>
+                <option value="admin">Admin</option>
+              </select>
+              <div className="modal-actions">
+                <button onClick={handleSaveEditUser}>Save</button>
+                <button onClick={() => setEditUser(null)}>Cancel</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -423,52 +519,65 @@ const AdminDashboard = () => {
                 handleAddArticle();
               }}
             >
-              <div>
-                <label>Title:</label>
-                <input
-                  type="text"
-                  value={newArticle.title}
-                  onChange={(e) =>
-                    setNewArticle({ ...newArticle, title: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div>
-                <label>Content:</label>
-                <textarea
-                  value={newArticle.content}
-                  onChange={(e) =>
-                    setNewArticle({ ...newArticle, content: e.target.value })
-                  }
-                  required
-                ></textarea>
-              </div>
-              <div>
-                <label>Category:</label>
-                <select
-                  value={newArticle.category}
-                  onChange={(e) =>
-                    setNewArticle({ ...newArticle, category: e.target.value })
-                  }
-                >
-                  {categories.map((category) => (
-                    <option key={category._id} value={category.name}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label>Source:</label>
-                <input
-                  type="text"
-                  value={newArticle.source}
-                  onChange={(e) =>
-                    setNewArticle({ ...newArticle, source: e.target.value })
-                  }
-                />
-              </div>
+              <input
+                type="text"
+                value={newArticle.title}
+                onChange={(e) =>
+                  setNewArticle({ ...newArticle, title: e.target.value })
+                }
+                placeholder="Title"
+                required
+              />
+              <textarea
+                value={newArticle.content}
+                onChange={(e) =>
+                  setNewArticle({ ...newArticle, content: e.target.value })
+                }
+                placeholder="Content"
+                required
+              ></textarea>
+              <input
+                type="text"
+                value={newArticle.category}
+                onChange={(e) =>
+                  setNewArticle({ ...newArticle, category: e.target.value })
+                }
+                placeholder="Category"
+              />
+              <input
+                type="text"
+                value={newArticle.tags || ""}
+                onChange={(e) =>
+                  setNewArticle({ ...newArticle, tags: e.target.value })
+                }
+                placeholder="Tags (comma-separated)"
+              />
+              <input
+                type="text"
+                value={newArticle.source}
+                onChange={(e) =>
+                  setNewArticle({ ...newArticle, source: e.target.value })
+                }
+                placeholder="Source"
+                required
+              />
+              <input
+                type="text"
+                value={newArticle.author}
+                onChange={(e) =>
+                  setNewArticle({ ...newArticle, author: e.target.value })
+                }
+                placeholder="Author (Name or ID)"
+                required
+              />
+              <input
+                type="text"
+                value={newArticle.picture || ""}
+                onChange={(e) =>
+                  setNewArticle({ ...newArticle, picture: e.target.value })
+                }
+                placeholder="Picture URL (optional)"
+              />
               <button type="submit">Add Article</button>
             </form>
           </div>
@@ -494,13 +603,6 @@ const AdminDashboard = () => {
             <button onClick={handleAddCategory} className="add-category-button">
               Add Category
             </button>
-          </div>
-        )}
-
-        {activeSection === "analytics" && (
-          <div>
-            <h2>Analytics Section</h2>
-            <p>Coming soon...</p>
           </div>
         )}
       </div>
